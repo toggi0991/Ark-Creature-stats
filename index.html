@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 공룡 스탯 관리</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #36393f;
+            color: #dcddde;
+            padding: 20px;
+            overflow-x: hidden; /* 가로 스크롤 방지 */
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        .dino-section {
+            background-color: #2f3136;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dino-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00b0f4;
+        }
+
+        .stat-group {
+            margin-bottom: 27px;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #40444b;
+            border-radius: 5px 5px 0 0;
+            margin-bottom: 0;
+        }
+
+        .stat-info {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .stat-name {
+            color: #00b0f4;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background-color: #5865f2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #4752c4;
+        }
+
+        button:active {
+            background-color: #3c45a5;
+        }
+
+        /* 증가값 input 커스텀 스타일 */
+        .increment-input-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .increment-input {
+            width: 80px;
+            padding: 8px 30px 8px 8px;
+            text-align: center;
+            background-color: #202225;
+            color: #dcddde;
+            border: 1px solid #4f545c;
+            border-radius: 4px;
+            font-size: 14px;
+            -moz-appearance: textfield;
+            transition: border-color 0.2s;
+        }
+
+        .increment-input::-webkit-inner-spin-button,
+        .increment-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .increment-input:focus {
+            outline: none;
+            border-color: #00b0f4;
+        }
+
+        .increment-input:hover {
+            border-color: #5865f2;
+        }
+
+        /* 커스텀 증감 버튼 컨테이너 */
+        .input-spinners {
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .spinner-btn {
+            width: 24px;
+            height: 14.4px;
+            background-color: #4f545c;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #dcddde;
+            font-size: 10px;
+            transition: background-color 0.2s;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .spinner-btn:hover {
+            background-color: #5865f2;
+        }
+
+        .spinner-btn:active {
+            background-color: #4752c4;
+        }
+
+        .code-container {
+            background-color: #1e1e1e;
+            border-radius: 0 0 5px 5px;
+            margin-top: 0;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #d4d4d4;
+            user-select: none;
+        }
+
+        .code-container:hover {
+            background-color: #252526;
+            border: 1px solid #00b0f4;
+        }
+
+        .code-container:active {
+            background-color: #1a1a1a;
+        }
+
+        .code-container.copied {
+            background-color: #2d7d46;
+            border: 1px solid #3ba55d;
+        }
+
+        .copy-indicator {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+            color: #43b581;
+        }
+
+        .code-container.copied .copy-indicator {
+            opacity: 1;
+        }
+
+        .input-label {
+            font-size: 12px;
+            color: #b9bbbe;
+            margin-right: 5px;
+        }
+
+        /* 푸터 구분선 */
+        .footer-divider {
+            width: 100%;
+            height: 2px;
+            background-color: #202225;
+            margin-top: 40px;
+            margin-left: -20px;
+            margin-right: -20px;
+            width: calc(100% + 40px); /* body padding 20px * 2 */
+        }
+
+        /* 푸터 스타일 */
+        .footer {
+            text-align: center;
+            padding: 30px 0 20px 0;
+            font-size: 13px;
+            color: #72767d;
+        }
+
+        .footer a {
+            color: #00b0f4;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: #5865f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦖 ARK 공룡 스탯 관리</h1>
+
+        <div id="dinos-container"></div>
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer">
+        Made with <a href="https://claude.ai" target="_blank">Claude</a>
+    </div>
+    
+    <script>
+        // localStorage 관리 객체 (쿠키 대신 localStorage 사용)
+        const StorageManager = {
+            // 데이터 저장
+            setItem: function(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    console.log('저장 완료:', key, value);
+                    return true;
+                } catch (e) {
+                    console.error('저장 실패:', e);
+                    return false;
+                }
+            },
+
+            // 데이터 불러오기
+            getItem: function(key) {
+                try {
+                    const item = localStorage.getItem(key);
+                    if (item === null) {
+                        console.log('저장된 데이터 없음:', key);
+                        return null;
+                    }
+                    const value = JSON.parse(item);
+                    console.log('불러오기 완료:', key, value);
+                    return value;
+                } catch (e) {
+                    console.error('불러오기 실패:', e);
+                    return null;
+                }
+            },
+
+            // 공룡 데이터 저장
+            saveDinoData: function(dinos) {
+                return this.setItem('ark_dino_stats', dinos);
+            },
+
+            // 공룡 데이터 불러오기
+            loadDinoData: function() {
+                return this.getItem('ark_dino_stats');
+            },
+
+            // 증가값 저장
+            saveIncrementValue: function(dinoIndex, statIndex, value) {
+                const key = `increment_${dinoIndex}_${statIndex}`;
+                return this.setItem(key, value);
+            },
+
+            // 증가값 불러오기
+            loadIncrementValue: function(dinoIndex, statIndex) {
+                const key = `increment_${dinoIndex}_${statIndex}`;
+                const value = this.getItem(key);
+                return value !== null ? value : 2; // 기본값 2
+            },
+
+            // 모든 데이터 초기화 (디버깅용)
+            clearAll: function() {
+                localStorage.clear();
+                console.log('모든 데이터 초기화 완료');
+            }
+        };
+
+        // 초기 공룡 데이터 (기본값)
+        const defaultDinos = [
+            {
+                name: '올빼미',
+                code: 'owl',
+                stats: [
+                    { name: '기력', engName: '기력', base: 101, current: 145, level: 11 },
+                    { name: '체력', engName: '체력', base: 68, current: 100, level: 9 }
+                ]
+            },
+            {
+                name: '렉스',
+                code: 'rex',
+                stats: [
+                    { name: '근공', engName: '근접공격력', base: 98, current: 142, level: 11 },
+                    { name: '체력', engName: '체력', base: 89, current: 125, level: 9 }
+                ]
+            },
+            {
+                name: '기가',
+                code: 'gigant',
+                stats: [
+                    { name: '근공', engName: '근접공격력', base: 87, current: 103, level: 4 },
+                    { name: '체력', engName: '체력', base: 79, current: 95, level: 4 }
+                ]
+            },
+            {
+                name: '그리핀',
+                code: 'griffin',
+                stats: [
+                    { name: '근공', engName: '근접공격력', base: 85, current: 97, level: 3 },
+                    { name: '기력', engName: '기력', base: 86, current: 98, level: 3 }
+                ]
+            }
+        ];
+
+        // localStorage에서 데이터 불러오거나 기본값 사용
+        let dinos = StorageManager.loadDinoData() || JSON.parse(JSON.stringify(defaultDinos));
+        console.log('초기 공룡 데이터:', dinos);
+
+        function renderDinos() {
+            const container = document.getElementById('dinos-container');
+            container.innerHTML = '';
+
+            dinos.forEach((dino, dinoIndex) => {
+                const dinoSection = document.createElement('div');
+                dinoSection.className = 'dino-section';
+
+                let html = `<div class="dino-header">${dino.name}</div>`;
+
+                dino.stats.forEach((stat, statIndex) => {
+                    const codeContent = `${dino.code},PATERNAL: ${stat.level},${stat.engName} [${stat.current}-`;
+                    
+                    // localStorage에서 증가값 불러오기
+                    const savedIncrementValue = StorageManager.loadIncrementValue(dinoIndex, statIndex);
+                    
+                    html += `
+                        <div class="stat-group">
+                            <div class="stat-row">
+                                <div class="stat-info">
+                                    <span class="stat-name">${stat.name}</span> ${dino.name} 
+                                    기본 ${stat.base} 현재 <strong>${stat.current}</strong>
+                                </div>
+                                <div class="controls">
+                                    <span class="input-label">증가값:</span>
+                                    <div class="increment-input-wrapper">
+                                        <input type="number" class="increment-input" value="${savedIncrementValue}" min="2" id="increment-${dinoIndex}-${statIndex}" data-dino="${dinoIndex}" data-stat="${statIndex}">
+                                        <div class="input-spinners">
+                                            <button class="spinner-btn up" onclick="changeIncrement(${dinoIndex}, ${statIndex}, 2)">▲</button>
+                                            <button class="spinner-btn down" onclick="changeIncrement(${dinoIndex}, ${statIndex}, -2)">▼</button>
+                                        </div>
+                                    </div>
+                                    <button onclick="updateStat(${dinoIndex}, ${statIndex}, -1, event)">-</button>
+                                    <button onclick="updateStat(${dinoIndex}, ${statIndex}, 1, event)">+</button>
+                                </div>
+                            </div>
+                            <div class="code-container" id="code-container-${dinoIndex}-${statIndex}" onclick="copyCode(${dinoIndex}, ${statIndex})">
+                                <span id="code-${dinoIndex}-${statIndex}">${codeContent}</span>
+                                <span class="copy-indicator">✅ 복사됨!</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                dinoSection.innerHTML = html;
+                container.appendChild(dinoSection);
+            });
+
+            // 렌더링 후 이벤트 리스너 추가
+            addScrollListeners();
+            addInputChangeListeners();
+        }
+
+        // input 변경 이벤트 리스너 추가
+        function addInputChangeListeners() {
+            const inputs = document.querySelectorAll('.increment-input');
+            
+            inputs.forEach((input) => {
+                // input 이벤트로 실시간 저장
+                input.addEventListener('input', function() {
+                    const dinoIndex = parseInt(this.getAttribute('data-dino'));
+                    const statIndex = parseInt(this.getAttribute('data-stat'));
+                    let value = parseInt(this.value);
+                    
+                    // 최소값 검증
+                    if (isNaN(value) || value < 2) {
+                        value = 2;
+                        this.value = 2;
+                    }
+                    
+                    // localStorage에 저장
+                    StorageManager.saveIncrementValue(dinoIndex, statIndex, value);
+                });
+            });
+        }
+
+        // Shift + 스크롤로 증가값 조절 기능 추가
+        function addScrollListeners() {
+            const inputs = document.querySelectorAll('.increment-input');
+            
+            inputs.forEach((input) => {
+                input.addEventListener('wheel', function(e) {
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        
+                        const idParts = this.id.split('-');
+                        const dinoIndex = parseInt(idParts[1]);
+                        const statIndex = parseInt(idParts[2]);
+                        
+                        const change = e.deltaY < 0 ? 2 : -2;
+                        
+                        changeIncrement(dinoIndex, statIndex, change);
+                    }
+                });
+            });
+        }
+
+        // 증가값 변경 함수
+        function changeIncrement(dinoIndex, statIndex, change) {
+            const incrementInput = document.getElementById(`increment-${dinoIndex}-${statIndex}`);
+            let currentValue = parseInt(incrementInput.value) || 2;
+            let newValue = currentValue + change;
+            
+            // 최소값 2 유지
+            if (newValue < 2) {
+                newValue = 2;
+            }
+            
+            incrementInput.value = newValue;
+            
+            // localStorage에 증가값 저장
+            StorageManager.saveIncrementValue(dinoIndex, statIndex, newValue);
+        }
+
+        function updateStat(dinoIndex, statIndex, direction, event) {
+            if (event) {
+                event.preventDefault();
+            }
+            
+            const incrementInput = document.getElementById(`increment-${dinoIndex}-${statIndex}`);
+            const increment = parseInt(incrementInput.value) || 2;
+            
+            const dino = dinos[dinoIndex];
+            const stat = dino.stats[statIndex];
+            
+            // 레벨은 1만 증가/감소
+            stat.level += direction;
+            
+            // 스탯은 입력된 증가값만큼 증가/감소
+            const change = increment * direction;
+            stat.current += change;
+
+            // 음수 방지
+            if (stat.current < stat.base) {
+                stat.current = stat.base;
+            }
+            if (stat.level < 0) {
+                stat.level = 0;
+            }
+
+            // localStorage에 공룡 데이터 저장
+            StorageManager.saveDinoData(dinos);
+
+            // 해당 스탯만 업데이트
+            updateStatDisplay(dinoIndex, statIndex);
+        }
+
+        function updateStatDisplay(dinoIndex, statIndex) {
+            const dino = dinos[dinoIndex];
+            const stat = dino.stats[statIndex];
+            
+            // 스탯 정보 업데이트
+            const statRows = document.querySelectorAll('.stat-row');
+            const targetIndex = dinoIndex * 2 + statIndex;
+            const statInfo = statRows[targetIndex].querySelector('.stat-info');
+            statInfo.innerHTML = `
+                <span class="stat-name">${stat.name}</span> ${dino.name} 
+                기본 ${stat.base} 현재 <strong>${stat.current}</strong>
+            `;
+            
+            // 코드 텍스트 업데이트
+            const codeContent = `${dino.code},PATERNAL: ${stat.level},${stat.engName} [${stat.current}-`;
+            const codeElement = document.getElementById(`code-${dinoIndex}-${statIndex}`);
+            codeElement.textContent = codeContent;
+        }
+
+        function copyCode(dinoIndex, statIndex) {
+            const codeElement = document.getElementById(`code-${dinoIndex}-${statIndex}`);
+            const text = codeElement.textContent;
+            const container = document.getElementById(`code-container-${dinoIndex}-${statIndex}`);
+            
+            navigator.clipboard.writeText(text).then(() => {
+                container.classList.add('copied');
+                
+                setTimeout(() => {
+                    container.classList.remove('copied');
+                }, 1500);
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                alert('복사에 실패했습니다.');
+            });
+        }
+
+        // 초기 렌더링
+        renderDinos();
+
+        // 디버깅용 - 콘솔에서 StorageManager.clearAll() 로 모든 데이터 초기화 가능
+        window.StorageManager = StorageManager;
+    </script>
+</body>
+</html>
