@@ -314,13 +314,174 @@
         .footer a:hover {
             color: #5865f2;
         }
+
+        /* 공유 코드 영역 */
+        .share-section {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #2f3136;
+            border-radius: 8px;
+            padding: 14px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 100;
+            width: 320px;
+        }
+
+        .share-section-title {
+            font-size: 12px;
+            color: #b9bbbe;
+            margin-bottom: 8px;
+        }
+
+        .share-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .share-input {
+            flex: 1;
+            padding: 6px 8px;
+            background-color: #202225;
+            color: #dcddde;
+            border: 1px solid #4f545c;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            min-width: 0;
+        }
+
+        .share-input:focus {
+            outline: none;
+            border-color: #00b0f4;
+        }
+
+        .share-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        /* 확인 모달 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.6);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background-color: #2f3136;
+            border-radius: 8px;
+            padding: 20px;
+            width: 420px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 14px;
+        }
+
+        .modal-diff-item {
+            background-color: #40444b;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .modal-diff-dino {
+            color: #00b0f4;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .modal-diff-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            color: #b9bbbe;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        .modal-diff-label {
+            color: #dcddde;
+            min-width: 40px;
+        }
+
+        .modal-diff-old {
+            color: #ed4245;
+        }
+
+        .modal-diff-arrow {
+            color: #72767d;
+        }
+
+        .modal-diff-new {
+            color: #3ba55d;
+        }
+
+        .modal-diff-same {
+            color: #72767d;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .modal-cancel-btn {
+            background-color: #4f545c;
+        }
+
+        .modal-cancel-btn:hover {
+            background-color: #686d73;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🦖 ARK 공룡 스탯 관리</h1>
 
+        <div class="share-section">
+            <div class="share-section-title">공유 코드 생성 / 불러오기</div>
+            <div class="share-row">
+                <input type="text" class="share-input" id="share-input" placeholder="코드를 붙여넣고 불러오기를 누르세요...">
+                <button class="share-btn" onclick="generateShareCode()">코드 생성</button>
+                <button class="share-btn" onclick="loadShareCode()">불러오기</button>
+            </div>
+        </div>
+
         <div id="dinos-container"></div>
+    </div>
+
+    <!-- 불러오기 확인 모달 -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-title">변경사항 확인</div>
+            <div id="modal-diff-content"></div>
+            <div class="modal-actions">
+                <button class="modal-cancel-btn" onclick="closeModal()">취소</button>
+                <button onclick="applyShareCode()">적용</button>
+            </div>
+        </div>
     </div>
 
     <div class="footer-divider"></div>
@@ -708,6 +869,127 @@
                 console.error('복사 실패:', err);
                 alert('복사에 실패했습니다.');
             });
+        }
+
+        // 공유 코드 생성 (변동값만 압축: code:c,l,m/c,l,m|...)
+        function generateShareCode() {
+            const compact = dinos.map(dino =>
+                dino.code + ':' + dino.stats.map(s => `${s.current},${s.level},${s.mutations}`).join('/')
+            ).join('|');
+            const code = btoa(compact);
+            const input = document.getElementById('share-input');
+            input.value = code;
+            input.select();
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = input.nextElementSibling;
+                const orig = btn.textContent;
+                btn.textContent = '✅ 복사됨!';
+                btn.style.backgroundColor = '#3ba55d';
+                setTimeout(() => {
+                    btn.textContent = orig;
+                    btn.style.backgroundColor = '';
+                }, 1500);
+            });
+        }
+
+        let pendingShareMap = null;
+
+        // 공유 코드 불러오기 - 미리보기
+        function loadShareCode() {
+            const input = document.getElementById('share-input');
+            const code = input.value.trim();
+            if (!code) return;
+            try {
+                const compact = atob(code);
+                const entries = compact.split('|');
+                const map = {};
+                entries.forEach(entry => {
+                    const [dinoCode, statsStr] = entry.split(':');
+                    map[dinoCode] = statsStr.split('/').map(s => {
+                        const [current, level, mutations] = s.split(',').map(Number);
+                        return { current, level, mutations };
+                    });
+                });
+
+                // 변경사항 계산 및 표시
+                let diffHtml = '';
+                let hasAnyChange = false;
+
+                dinos.forEach(dino => {
+                    if (!map[dino.code]) return;
+                    let statRows = '';
+                    dino.stats.forEach((stat, i) => {
+                        const n = map[dino.code][i];
+                        if (!n) return;
+                        const fields = [
+                            { label: '현재', oldVal: stat.current, newVal: n.current },
+                            { label: 'level', oldVal: stat.level, newVal: n.level },
+                            { label: '뮤테이션', oldVal: stat.mutations, newVal: n.mutations }
+                        ];
+                        fields.forEach(f => {
+                            const changed = f.oldVal !== f.newVal;
+                            if (changed) hasAnyChange = true;
+                            statRows += `
+                                <div class="modal-diff-row">
+                                    <span class="modal-diff-label">[${stat.name}] ${f.label}</span>
+                                    ${changed
+                                        ? `<span class="modal-diff-old">${f.oldVal}</span>
+                                           <span class="modal-diff-arrow">→</span>
+                                           <span class="modal-diff-new">${f.newVal}</span>`
+                                        : `<span class="modal-diff-same">${f.oldVal} (변경 없음)</span>`
+                                    }
+                                </div>`;
+                        });
+                    });
+                    if (statRows) {
+                        diffHtml += `<div class="modal-diff-item">
+                            <div class="modal-diff-dino">${dino.name}</div>
+                            ${statRows}
+                        </div>`;
+                    }
+                });
+
+                if (!diffHtml) {
+                    alert('적용 가능한 공룡 데이터가 없습니다.');
+                    return;
+                }
+
+                if (!hasAnyChange) {
+                    diffHtml += `<div style="color:#72767d;font-size:13px;margin-top:8px;">모든 값이 현재와 동일합니다.</div>`;
+                }
+
+                pendingShareMap = map;
+                document.getElementById('modal-diff-content').innerHTML = diffHtml;
+                document.getElementById('modal-overlay').classList.add('active');
+            } catch (e) {
+                alert('올바르지 않은 코드입니다.');
+            }
+        }
+
+        function closeModal() {
+            pendingShareMap = null;
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        // 실제 적용
+        function applyShareCode() {
+            if (!pendingShareMap) return;
+            dinos.forEach(dino => {
+                if (pendingShareMap[dino.code]) {
+                    dino.stats.forEach((stat, i) => {
+                        const n = pendingShareMap[dino.code][i];
+                        if (n) {
+                            stat.current = n.current;
+                            stat.level = n.level;
+                            stat.mutations = n.mutations;
+                        }
+                    });
+                }
+            });
+            StorageManager.saveDinoData(dinos);
+            renderDinos();
+            document.getElementById('share-input').value = '';
+            closeModal();
         }
 
         // 초기 렌더링
