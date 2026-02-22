@@ -755,9 +755,12 @@
                 }
             } else {
                 // 증가(+1)
-                stat.level++;
                 stat.mutations++;
                 stat.current += increment;
+                // mutations 20~21 구간에서는 level 동결, 그 외에는 level도 증가
+                if (stat.mutations < 20 || stat.mutations >= 22) {
+                    stat.level++;
+                }
             }
 
             // 범위 제한
@@ -765,7 +768,8 @@
                 stat.level = 0;
                 stat.current = stat.base;
             }
-            if (stat.level > 20) {
+            // mutations < 22 구간에서만 level 20 캡 적용
+            if (stat.mutations < 22 && stat.level > 20) {
                 stat.level = 20;
             }
             if (stat.current < stat.base) {
