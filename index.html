@@ -749,16 +749,16 @@
                 stat.mutations--;
                 stat.current -= increment;
 
-                // mutations < 20 일 때만 level도 감소
-                if (stat.mutations < 20) {
+                // mutations 20~21 구간 제외하고 level도 감소
+                if (stat.mutations < 20 || stat.mutations >= 22) {
                     stat.level--;
                 }
             } else {
                 // 증가(+1)
                 stat.mutations++;
                 stat.current += increment;
-                // mutations 20~21 구간에서는 level 동결, 그 외에는 level도 증가
-                if (stat.mutations < 20 || stat.mutations >= 22) {
+                // mutations 21 구간에서만 level 동결, 그 외에는 level도 증가
+                if (stat.mutations <= 20 || stat.mutations >= 22) {
                     stat.level++;
                 }
             }
